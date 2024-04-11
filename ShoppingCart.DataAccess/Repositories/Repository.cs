@@ -33,12 +33,9 @@ namespace ShoppingCart.DataAccess.Repositories
             _dbSet.RemoveRange(entity);
         }
 
-        public IEnumerable<T> GetAll(System.Linq.Expressions.Expression<Func<T, bool>>? predicate = null
-            , string? includePropertirs = null)
+        public IEnumerable<T> GetAll(string? includePropertirs = null)
         {
             IQueryable<T> query = _dbSet;
-            if (predicate != null)
-                query = query.Where(predicate);
             if (includePropertirs != null)
                 foreach (var item in includePropertirs.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
                     query = query.Include(item);

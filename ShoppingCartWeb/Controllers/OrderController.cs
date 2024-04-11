@@ -23,7 +23,7 @@ namespace ShoppingCart.Web.Areas.Admin.Controllers
             OrderVM orderVM = new OrderVM()
             {
                 OrderHeader = _unitOfWork.OrderHeader.GetT(x => x.Id == id, includeProperties: "ApplicationUser"),
-                OrderDetails = _unitOfWork.OrderDetail.GetAll(x => x.OrderHeaderId == id, includeProperties: "Product")
+                OrderDetails = _unitOfWork.OrderDetail.GetAll(includeProperties: "Product").Where(x => x.OrderHeaderId == id)
             };
 
             return orderVM;
