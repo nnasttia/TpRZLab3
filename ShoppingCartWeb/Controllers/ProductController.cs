@@ -19,21 +19,8 @@ namespace ShoppingCart.Web.Areas.Admin.Controllers
             _hostingEnvironment = webHostEnvironment;
         }
 
-        #region APICALL
-        public IActionResult AllProducts()
-        {
-            var products = _unitOfWork.Product.GetAll(includeProperties: "Category");
-            return Json(new { data = products });
-        }
-        #endregion
-
-        public IActionResult Index()
-        {
-            return View();
-        }
-
         [HttpGet]
-        public IActionResult CreateUpdate(int? id)
+        public ProductVM Get(int? id)
         {
             ProductVM vm = new ()
             {
@@ -45,77 +32,61 @@ namespace ShoppingCart.Web.Areas.Admin.Controllers
                     Value = x.Id.ToString()
                 })
             };
+
             if (id == null || id == 0)
-                return View(vm);
+            {
+                return vm;
+            }
             else
             {
                 vm.Product = _unitOfWork.Product.GetT(x => x.Id == id);
                 if (vm.Product == null)
-                    return NotFound();
+                {
+                    throw new Exception("Product not found");
+                }
                 else
-                    return View(vm);
+                {
+                    return vm;
+                }
             }
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult CreateUpdate(ProductVM vm, IFormFile? file)
+        public void CreateUpdate(ProductVM vm)
         {
             if(ModelState.IsValid)
             {
-                string fileName = string.Empty;  
-                if (file != null)
-                {
-                    string uploadDir = Path.Combine(_hostingEnvironment.WebRootPath, "ProductImage");
-                    fileName = Guid.NewGuid().ToString() + "-" + file.FileName;
-                    string filePath = Path.Combine(uploadDir, fileName);
-                    if (vm.Product.ImageUrl != null)
-                    {
-                        var oldImagePath = Path.Combine(_hostingEnvironment.WebRootPath, 
-                            vm.Product.ImageUrl.TrimStart('\\'));
-                        if (System.IO.File.Exists(oldImagePath))
-                            System.IO.File.Delete(oldImagePath);
-                    }
-                    using (var fileStream = new FileStream(filePath, FileMode.Create))
-                    {
-                        file.CopyTo(fileStream);
-                    }
-                    vm.Product.ImageUrl = @"\ProductImage\" + fileName;
-                }
                 if (vm.Product.Id == 0)
                 {
                     _unitOfWork.Product.Add(vm.Product);
-                    TempData["success"] = "Product Create Done";
                 }
                 else
                 {
                     _unitOfWork.Product.Update(vm.Product);
-                    TempData["success"] = "Product Create Done";
                 }
                 _unitOfWork.Save();
-                return RedirectToAction("Index");
             }
-            return RedirectToAction("Index");
+            else
+            {
+                throw new Exception("Model invalid");
+            }
         }
 
-        #region DeleteAPICALL
         [HttpDelete]
         public IActionResult Delete (int? id)
         {
             var product = _unitOfWork.Product.GetT(x => x.Id == id);
             if (product == null)
+            {
                 return Json(new { success = false, message = "Error in Fetching Data" });
+            }
             else
             {
-                var oldImagePath = Path.Combine(_hostingEnvironment.WebRootPath, product.ImageUrl.TrimStart('\\'));
-                if (System.IO.File.Exists(oldImagePath))
-                    System.IO.File.Delete(oldImagePath);
                 _unitOfWork.Product.Delete(product);
                 _unitOfWork.Save();
+
                 return Json(new { success = true, message = "Product Deleted" });
             }
         }
-        #endregion
-
     }
 }
